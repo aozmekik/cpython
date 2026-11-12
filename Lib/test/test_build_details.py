@@ -78,7 +78,14 @@ class FormatTestsBase:
             self.key('base_interpreter')
 
     def test_platform(self):
-        self.assertEqual(self.key('platform'), sysconfig.get_platform())
+        value = self.key('platform')
+        platform = sysconfig.get_platform()
+        if value != platform and sys.platform == 'linux' and sys.maxsize < 2**32:
+            # On Linux, the machine name comes from the kernel (os.uname()),
+            # so a 32-bit build can run on a different one than it was built
+            # on, e.g. 'armv8l' on a 64-bit ARM kernel instead of 'armv7l'.
+            self.skipTest(f'built for {value}, running on {platform}')
+        self.assertEqual(value, platform)
 
     def test_language_version(self):
         allowed_characters = string.digits + string.ascii_letters + '.'

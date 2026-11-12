@@ -1,0 +1,3 @@
+Fix ``test_build_details.test_platform`` for 32-bit builds running on a
+64-bit kernel, such as armhf on arm64, where :func:`sysconfig.get_platform`
+reports a different machine than at build time.
