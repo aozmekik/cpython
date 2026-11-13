@@ -1,0 +1,3 @@
+Fix ``test_c_stack_unwind`` on AArch64 builds with pointer authentication
+(``-mbranch-protection``): the manual frame pointer unwinder now strips the
+authentication code from the return addresses it finds.

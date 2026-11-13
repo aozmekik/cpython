@@ -126,6 +126,22 @@ static const uintptr_t min_frame_pointer_addr = 0x1000;
 #  define FRAME_POINTER_BIAS 0
 #endif
 
+#if defined(__aarch64__) && (defined(__GNUC__) || defined(__clang__))
+// With pointer authentication (-mbranch-protection), the return addresses
+// saved on the stack are signed in their upper bits.  XPACLRI strips the
+// signature from x30; it is in the HINT space, so it is a no-op on CPUs
+// without pointer authentication.
+static inline uintptr_t
+strip_return_address(uintptr_t addr)
+{
+    register uintptr_t x30 __asm__("x30") = addr;
+    __asm__ ("hint #7" : "+r" (x30));  // xpaclri
+    return x30;
+}
+#else
+#  define strip_return_address(addr) (addr)
+#endif
+
 
 static PyObject *
 _get_current_module(void)
@@ -576,7 +592,8 @@ manual_unwind_from_fp(uintptr_t *frame_pointer)
         }
         uintptr_t *next_fp = (uintptr_t *)(frame_pointer[FRAME_POINTER_NEXT_OFFSET]
                                            + FRAME_POINTER_BIAS);
-        uintptr_t return_addr = frame_pointer[FRAME_POINTER_RETURN_OFFSET];
+        uintptr_t return_addr = strip_return_address(
+            frame_pointer[FRAME_POINTER_RETURN_OFFSET]);
 
         PyObject *addr_obj = PyLong_FromUnsignedLongLong(return_addr);
         if (addr_obj == NULL) {
